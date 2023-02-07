@@ -53,7 +53,7 @@ def optimise_input(model,
                                 The virus can spread from an infected person’s mouth or nose in small liquid particles when they cough, \
                                 sneeze, speak, sing or breathe. These particles range from larger respiratory droplets to smaller aerosols. \
                                 It is important to practice respiratory etiquette, for example by coughing into a flexed elbow, and to stay \
-                                home and self-isolate until you recover if you feel unwell."
+                                home and self-isolate until you recover if you feel unwell.",
                    mask_frac=0.5,
                    **kwargs):
     # Picks a single token at random from vocabulary for target_output
