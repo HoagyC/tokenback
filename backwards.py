@@ -43,10 +43,13 @@ def optimise_input(model,
                    optimiser='Adam',
                    initial_input="Most people infected with the virus will experience mild to moderate respiratory illness and recover without requiring special treatment. However, some will become seriously ill and require medical attention. Older people and those with underlying medical conditions like cardiovascular",
                    mask_frac=0.5,
+                   solid_gold=False,
                    **kwargs):
     # Picks a single token at random from vocabulary for target_output
     if run_random > 0:
         random_ix = (torch.rand(1) * word_embeddings.shape[0]).int()
+        if solid_gold:
+            random_ix = 43453
         target_output = tokenizer.decode(random_ix)  # Converts token index to string representation
         wandb.config.update({'target_output': target_output}, allow_val_change=True)
 
@@ -294,6 +297,7 @@ if __name__ == '__main__':
     parser.add_argument('--equal_clusters', action='store_true')
     parser.add_argument('--penalise_repetition', action='store_true')
     parser.add_argument('--mask_frac', type=float, default=0.5)
+    parser.add_argument('--solid_gold', action='store_true')  # if true, we use the solid gold magikarp input
 
     args = parser.parse_args()
 
