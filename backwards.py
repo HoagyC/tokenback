@@ -270,7 +270,7 @@ def optimise_input(model,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--wandb_user', type=str, default='jessicamarycooper')
+    parser.add_argument('--wandb_user', type=str, default='hoagy')
     parser.add_argument('--model_name', type=str, default='gpt2')
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--lr', type=float, default=0.1)
