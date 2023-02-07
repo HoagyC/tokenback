@@ -1,14 +1,13 @@
-from helpers import *
+from helpers import kkmeans, closest_tokens, load_all, model_emb
 
-import torch
-from matplotlib import pyplot as plt
-from IPython import display
 import numpy as np
 import argparse
-import json
 import os
 from collections import Counter
 import random
+
+import torch
+import wandb
 
 os.environ["WANDB_SILENT"] = "true"
 
@@ -42,9 +41,8 @@ def optimise_input(model,
                    equal_clusters=False,
                    penalise_repetition=False,
                    optimiser='Adam',
-                   initial_input= "The pandemic, which had began in China, spread across the whole wide",
-                   mask_frac=0.5
-
+                   initial_input="The pandemic, which had began in China, spread across the whole wide",
+                   mask_frac=0.5,
                    **kwargs):
     # Picks a single token at random from vocabulary for target_output
     if run_random > 0:
@@ -52,12 +50,10 @@ def optimise_input(model,
         target_output = tokenizer.decode(random_ix)  # Converts token index to string representation
         wandb.config.update({'target_output': target_output}, allow_val_change=True)
 
-
     print('Optimising input of length {} to maximise output logits for "{}"'.format(input_len, target_output))
     done = None
 
     output_ix = tokenizer.encode(target_output, return_tensors='pt')[0].to(device)
-
 
     # output_ix is a 1-D tensor of shape (output_len,) that contains the indices of the tokens in the encoding of the string 'target_output'
     # tokenizer.encode(target_output, return_tensors='pt') is a list containing this one tensor, hence the need for the [0]
@@ -69,8 +65,8 @@ def optimise_input(model,
     optimised_tokens = []
     metrics_table = wandb.Table(columns=['Input', 'Output', 'Loss', 'Perplexity', 'Distance', 'Probs'])
 
-    if output_len == None or output_len < output_ix.shape[
-        0]:  # If we don't specify output_len (i.e. it's == None), then...
+    if output_len is None or output_len < output_ix.shape[0]: 
+        # If we don't specify output_len (i.e. it's == None), then...
         output_len = output_ix.shape[
             0]  # ...it will be set to the number of tokens in the encoding of the string 'target_output'
     else:
@@ -80,10 +76,10 @@ def optimise_input(model,
 
     # 76143 * 19119 = 1.4e9
 
-    if rand_input == True:
+    if rand_input is True:
         start_input = word_embeddings[torch.randperm(word_embeddings.shape[0])[:input_len * batch_size]].reshape(
             batch_size, input_len, -1)
-    elif local_input == True:
+    elif local_input is True:
         local_embs = closest_tokens(word_embeddings[output_ix].mean(dim=0), word_embeddings, tokenizer, n=batch_size)[-1].unsqueeze(1)
         start_input = local_embs.repeat(1, input_len, 1)
     elif initial_input is not None:
@@ -213,8 +209,8 @@ def optimise_input(model,
                     wandb.log({'Optimised Inputs': wandb.Html(
                         ''.join(['<p>{}.{}</p>'.format(i, repr(s)) for i, s in enumerate(optimised_inputs)]))})
 
-                if no_reinit == False:
-                    if rand_input == True or local_input == True:
+                if no_reinit is False:
+                    if rand_input is True or local_input is True:
                         input.data[b] = word_embeddings[torch.randperm(word_embeddings.shape[0])[:input_len]].reshape(1,
                                                                                                                       input_len,
                                                                                                                       -1).to(
@@ -246,7 +242,7 @@ def optimise_input(model,
                     if verbose == 2:
                         print(b, repr(' Raw embeddings: {}'.format(''.join([closest_tokens(e)[0][0] for e in emb[b]]))))
 
-                    print(b, repr(' Closest embeddings: {}'.format(tokenizer.decode(model_outs[b]), '\n')))
+                    print(b, repr(' Closest embeddings: {}'.format(tokenizer.decode(model_outs[b]))))
                     closest_embeddings.append(tokenizer.decode(model_outs[b]))
 
             wandb.log({'Closest Embeddings': wandb.Html(
