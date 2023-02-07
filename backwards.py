@@ -41,9 +41,7 @@ def optimise_input(model,
                    equal_clusters=False,
                    penalise_repetition=False,
                    optimiser='Adam',
-                   initial_input="Most people infected with the virus will experience mild to moderate respiratory illness \
-                     and recover without requiring special treatment. However, some will become seriously ill and require\
-                         medical attention. Older people and those with underlying medical conditions like cardiovascular",
+                   initial_input="Most people infected with the virus will experience mild to moderate respiratory illness and recover without requiring special treatment. However, some will become seriously ill and require medical attention. Older people and those with underlying medical conditions like cardiovascular",
                    mask_frac=0.5,
                    **kwargs):
     # Picks a single token at random from vocabulary for target_output
