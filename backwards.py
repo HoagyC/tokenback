@@ -65,9 +65,9 @@ def optimise_input(model,
     optimised_tokens = []
     metrics_table = wandb.Table(columns=['Input', 'Output', 'Loss', 'Perplexity', 'Distance', 'Probs'])
 
-    if output_len is None or output_len < output_ix.shape[0]: 
+    if output_len is None or output_len < output_ix.shape[0]:
         # If we don't specify output_len (i.e. it's == None), then...
-        output_len = output_ix.shape[0]  
+        output_len = output_ix.shape[0]
         # ...it will be set to the number of tokens in the encoding of the string 'target_output'
     else:
         possible_target_positions = torch.stack(
@@ -94,14 +94,14 @@ def optimise_input(model,
     input = torch.nn.Parameter(start_input.to(device), requires_grad=True)
     # input is Parameter object that wraps a tensor and adds additional functionality.
     if initial_input is not None and mask_frac < 1:
-        input_mask = torch.rand(start_input.shape) < mask_frac
+        input_mask = torch.rand(start_input.shape[:2]) < mask_frac
     else:
         input_mask = torch.ones(batch_size, input_len, 1)
 
     if optimiser == 'Adam':
-        optimiser = torch.optim.Adam([input[input_mask]], lr=lr, eps=0.0001)
+        optimiser = torch.optim.Adam([input], lr=lr, eps=0.0001)
     elif optimiser == 'SGD':
-        optimiser = torch.optim.SGD([input[input_mask]], lr=lr)
+        optimiser = torch.optim.SGD([input], lr=lr)
     else:
         print('Unsupported optimiser: ', optimiser)
     # standard optimiser; note that it generally operates on a list of tensors, so we're giving it a list of one tensor; standard learning rate
@@ -211,10 +211,7 @@ def optimise_input(model,
 
                 if no_reinit is False:
                     if rand_input is True or local_input is True:
-                        input.data[b] = word_embeddings[torch.randperm(word_embeddings.shape[0])[:input_len]].reshape(1,
-                                                                                                                      input_len,
-                                                                                                                      -1).to(
-                            device)
+                        input.data[b] = word_embeddings[torch.randperm(word_embeddings.shape[0])[:input_len]].reshape(1, input_len, -1).to(device)
                     else:
                         rand_centroids = centroids[np.random.randint(0, batch_size, size=input_len)].unsqueeze(0)
                         input.data[b] = rand_centroids
@@ -258,6 +255,7 @@ def optimise_input(model,
 
         optimiser.zero_grad()
         total_loss.backward()
+        input.grad[input_mask] = 0
         optimiser.step()
         # standard NN optimisation
 
@@ -338,4 +336,3 @@ if __name__ == '__main__':
         results = optimise_input(**vars(args))
         wandb.log(results)
         run.finish()
-
