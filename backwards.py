@@ -42,6 +42,9 @@ def optimise_input(model,
                    equal_clusters=False,
                    penalise_repetition=False,
                    optimiser='Adam',
+                   initial_input= "The pandemic, which had began in China, spread across the whole wide",
+                   mask_frac=0.5
+
                    **kwargs):
     # Picks a single token at random from vocabulary for target_output
     if run_random > 0:
@@ -49,10 +52,13 @@ def optimise_input(model,
         target_output = tokenizer.decode(random_ix)  # Converts token index to string representation
         wandb.config.update({'target_output': target_output}, allow_val_change=True)
 
+
     print('Optimising input of length {} to maximise output logits for "{}"'.format(input_len, target_output))
     done = None
 
     output_ix = tokenizer.encode(target_output, return_tensors='pt')[0].to(device)
+
+
     # output_ix is a 1-D tensor of shape (output_len,) that contains the indices of the tokens in the encoding of the string 'target_output'
     # tokenizer.encode(target_output, return_tensors='pt') is a list containing this one tensor, hence the need for the [0]
     # "return_tensors='pt'" ensures that we get a tensor in PyTorch format
@@ -72,12 +78,16 @@ def optimise_input(model,
             [torch.arange(0, output_ix.shape[0]) + i for i in range(output_len - output_ix.shape[0] + 1)])
         # generates list of legal token positions within output ("sequentiality enforcer")
 
+    # 76143 * 19119 = 1.4e9
+
     if rand_input == True:
         start_input = word_embeddings[torch.randperm(word_embeddings.shape[0])[:input_len * batch_size]].reshape(
             batch_size, input_len, -1)
     elif local_input == True:
         local_embs = closest_tokens(word_embeddings[output_ix].mean(dim=0), word_embeddings, tokenizer, n=batch_size)[-1].unsqueeze(1)
         start_input = local_embs.repeat(1, input_len, 1)
+    elif initial_input is not None:
+        start_input = word_embeddings[tokenizer.encode(initial_input, return_tensors='pt')[0]].to(device).repeat(batch_size, 1, 1)
     else:
         # Otherwise we use k-means clustering to find centroids as our start_input embeddings
         num_clusters = batch_size * input_len
@@ -87,11 +97,15 @@ def optimise_input(model,
 
     input = torch.nn.Parameter(start_input.to(device), requires_grad=True)
     # input is Parameter object that wraps a tensor and adds additional functionality.
+    if initial_input is not None and mask_frac < 1:
+        input_mask = torch.rand(batch_size, input_len, 1) < mask_frac
+    else:
+        input_mask = torch.ones(batch_size, input_len, 1)
 
     if optimiser == 'Adam':
-        optimiser = torch.optim.Adam([input], lr=lr, eps=0.0001)
+        optimiser = torch.optim.Adam([input[input_mask]], lr=lr, eps=0.0001)
     elif optimiser == 'SGD':
-        optimiser = torch.optim.SGD([input], lr=lr)
+        optimiser = torch.optim.SGD([input[input_mask]], lr=lr)
     else:
         print('Unsupported optimiser: ', optimiser)
     # standard optimiser; note that it generally operates on a list of tensors, so we're giving it a list of one tensor; standard learning rate
