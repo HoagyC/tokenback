@@ -67,8 +67,8 @@ def optimise_input(model,
 
     if output_len is None or output_len < output_ix.shape[0]: 
         # If we don't specify output_len (i.e. it's == None), then...
-        output_len = output_ix.shape[
-            0]  # ...it will be set to the number of tokens in the encoding of the string 'target_output'
+        output_len = output_ix.shape[0]  
+        # ...it will be set to the number of tokens in the encoding of the string 'target_output'
     else:
         possible_target_positions = torch.stack(
             [torch.arange(0, output_ix.shape[0]) + i for i in range(output_len - output_ix.shape[0] + 1)])
@@ -94,7 +94,7 @@ def optimise_input(model,
     input = torch.nn.Parameter(start_input.to(device), requires_grad=True)
     # input is Parameter object that wraps a tensor and adds additional functionality.
     if initial_input is not None and mask_frac < 1:
-        input_mask = torch.rand(batch_size, input_len, 1) < mask_frac
+        input_mask = torch.rand(start_input.shape) < mask_frac
     else:
         input_mask = torch.ones(batch_size, input_len, 1)
 
