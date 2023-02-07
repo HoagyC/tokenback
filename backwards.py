@@ -239,7 +239,7 @@ def optimise_input(model,
                     if verbose == 2:
                         print(b, repr(' Raw embeddings: {}'.format(''.join([closest_tokens(e)[0][0] for e in emb[b]]))))
 
-                    print(b, repr(' Closest embeddings: {}'.format(tokenizer.decode(model_outs[b]))), target_probs[b])
+                    print(b, repr(' Closest embeddings: {}'.format(tokenizer.decode(model_outs[b]))), target_probs[b].item(), target_output)
                     closest_embeddings.append(tokenizer.decode(model_outs[b]))
 
             wandb.log({'Closest Embeddings': wandb.Html(
@@ -293,6 +293,7 @@ if __name__ == '__main__':
     parser.add_argument('--optimiser', type=str, default='Adam')
     parser.add_argument('--equal_clusters', action='store_true')
     parser.add_argument('--penalise_repetition', action='store_true')
+    parser.add_argument('--mask_frac', type=float, default=0.5)
 
     args = parser.parse_args()
 
